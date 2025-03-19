@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="text-center">Face Verification</h3>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <p class="lead">Please verify your identity using facial recognition.</p>
+                        <p class="text-muted">Make sure you are in a well-lit area and your face is clearly visible.</p>
+                    </div>
+                    
+                    <div class="video-container mb-4">
+                        <video id="verificationVideo" class="w-100 rounded" autoplay muted></video>
+                        <div class="video-overlay">
+                            <div id="verificationStatus" class="text-center">
+                                <div class="spinner-border text-primary mb-2" role="status" style="display: none;">
+                                    <span class="visually-hidden">Verifying...</span>
+                                </div>
+                                <p id="statusMessage" class="mb-0"></p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center">
+                        <button id="startButton" class="btn btn-primary btn-lg">
+                            <i class="fas fa-camera me-2"></i>Start Verification
+                        </button>
+                        <button id="retryButton" class="btn btn-secondary btn-lg ms-2" style="display: none;">
+                            <i class="fas fa-redo me-2"></i>Try Again
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.video-container {
+    position: relative;
+    width: 100%;
+    max-width: 640px;
+    margin: 0 auto;
+    background: #000;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.video-container video {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.video-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+#verificationStatus {
+    text-align: center;
+}
+
+#statusMessage {
+    font-size: 1.2rem;
+    margin-top: 1rem;
+}
+</style>
+
+<script>
+let stream = null;
+let mediaRecorder = null;
+let recordedChunks = [];
+
+document.addEventListener('DOMContentLoaded', function() {
+    const startButton = document.getElementById('startButton');
+    const retryButton = document.getElementById('retryButton');
+    const video = document.getElementById('verificationVideo');
+    const statusMessage = document.getElementById('statusMessage');
+    const spinner = document.querySelector('.spinner-border');
+
+    async function startCamera() {
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { 
+                    width: 640,
+                    height: 480,
+                    facingMode: 'user'
+                } 
+            });
+            video.srcObject = stream;
+            startButton.disabled = true;
+            statusMessage.textContent = 'Camera started. Please position your face in the frame.';
+        } catch (err) {
+            console.error('Error accessing camera:', err);
+            statusMessage.textContent = 'Error accessing camera. Please make sure you have granted camera permissions.';
+        }
+    }
+
+    async function startVerification() {
+        try {
+            mediaRecorder = new MediaRecorder(stream);
+            recordedChunks = [];
+
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    recordedChunks.push(event.data);
+                }
+            };
+
+            mediaRecorder.onstop = async () => {
+                const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                const formData = new FormData();
+                formData.append('video', blob, 'verification.webm');
+                formData.append('field', 'facial_verification');
+
+                spinner.style.display = 'inline-block';
+                statusMessage.textContent = 'Verifying your identity...';
+
+                try {
+                    const response = await fetch('/api/upload_video', {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        }
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        statusMessage.textContent = 'Verification successful!';
+                        spinner.style.display = 'none';
+                        startButton.style.display = 'none';
+                        retryButton.style.display = 'inline-block';
+                        
+                        // Update application status
+                        await fetch('/api/update_step', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                            },
+                            body: JSON.stringify({ step: 'personal_info' })
+                        });
+                        
+                        // Redirect to next step after a short delay
+                        setTimeout(() => {
+                            window.location.href = '/application';
+                        }, 2000);
+                    } else {
+                        throw new Error(data.error || 'Verification failed');
+                    }
+                } catch (error) {
+                    console.error('Error during verification:', error);
+                    statusMessage.textContent = 'Verification failed. Please try again.';
+                    spinner.style.display = 'none';
+                    startButton.style.display = 'inline-block';
+                    retryButton.style.display = 'none';
+                }
+            };
+
+            mediaRecorder.start();
+            statusMessage.textContent = 'Recording... Please stay still.';
+            
+            // Stop recording after 5 seconds
+            setTimeout(() => {
+                mediaRecorder.stop();
+            }, 5000);
+        } catch (err) {
+            console.error('Error during verification:', err);
+            statusMessage.textContent = 'Error during verification. Please try again.';
+        }
+    }
+
+    startButton.addEventListener('click', async () => {
+        await startCamera();
+        setTimeout(startVerification, 2000); // Start verification after 2 seconds
+    });
+
+    retryButton.addEventListener('click', () => {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+        }
+        startButton.style.display = 'inline-block';
+        retryButton.style.display = 'none';
+        statusMessage.textContent = '';
+        startButton.disabled = false;
+    });
+});
+</script>
+{% endblock %} 

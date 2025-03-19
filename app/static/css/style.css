@@ -1,0 +1,307 @@
+/* Base styles */
+:root {
+    --primary-color: #1e88e5;
+    --secondary-color: #673ab7;
+    --success-color: #43a047;
+    --error-color: #e53935;
+    --warning-color: #fb8c00;
+    --light-color: #f5f5f5;
+    --dark-color: #212121;
+    --border-radius: 4px;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    color: var(--dark-color);
+    background-color: #f0f2f5;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 30px;
+    padding: 20px;
+    background-color: white;
+    border-radius: var(--border-radius);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+h1 {
+    color: var(--primary-color);
+    margin-bottom: 10px;
+}
+
+/* Button styles */
+.btn {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s;
+}
+
+.btn:hover {
+    background-color: #1565c0;
+}
+
+.btn:disabled {
+    background-color: #b0bec5;
+    cursor: not-allowed;
+}
+
+.btn-primary {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.btn-primary:hover {
+    background-color: #0b5ed7;
+    border-color: #0a58ca;
+}
+
+.btn-success {
+    background-color: var(--success-color);
+}
+
+.btn-error {
+    background-color: var(--error-color);
+}
+
+/* Landing page styles */
+.landing-content {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.features, .start-application {
+    flex: 1;
+    min-width: 300px;
+    background-color: white;
+    padding: 20px;
+    border-radius: var(--border-radius);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.features h2, .start-application h2 {
+    color: var(--primary-color);
+    margin-bottom: 15px;
+}
+
+.features ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+.features ul li {
+    padding: 8px 0;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.features ul li:last-child {
+    border-bottom: none;
+}
+
+.start-application p {
+    margin-bottom: 20px;
+}
+
+/* Application process styles */
+.application-content {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.video-container {
+    flex: 2;
+    min-width: 480px;
+    background-color: white;
+    padding: 20px;
+    border-radius: var(--border-radius);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.application-progress {
+    flex: 1;
+    min-width: 250px;
+    background-color: white;
+    padding: 20px;
+    border-radius: var(--border-radius);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.progress-steps {
+    list-style-type: none;
+    padding: 0;
+    margin-top: 20px;
+}
+
+.progress-steps li {
+    padding: 10px;
+    margin-bottom: 10px;
+    border-left: 3px solid #e0e0e0;
+    position: relative;
+}
+
+.progress-steps li.active {
+    border-left: 3px solid var(--primary-color);
+    font-weight: bold;
+}
+
+.progress-steps li.completed {
+    border-left: 3px solid var(--success-color);
+}
+
+/* Video and document upload styles */
+#bank-manager-video, #user-video {
+    width: 100%;
+    border-radius: var(--border-radius);
+    background-color: #212121;
+}
+
+.video-controls {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+}
+
+#document-preview {
+    margin-bottom: 15px;
+    min-height: 200px;
+    border: 2px dashed #e0e0e0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Result page styles */
+.result-content {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.result-box {
+    background-color: white;
+    padding: 20px;
+    border-radius: var(--border-radius);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    border-left: 5px solid #e0e0e0;
+}
+
+.result-box.approved {
+    border-left: 5px solid var(--success-color);
+}
+
+.result-box.rejected {
+    border-left: 5px solid var(--error-color);
+}
+
+.result-box.pending {
+    border-left: 5px solid var(--warning-color);
+}
+
+.application-summary {
+    background-color: white;
+    padding: 20px;
+    border-radius: var(--border-radius);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.application-summary table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+.application-summary table td {
+    padding: 8px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.application-summary table tr:last-child td {
+    border-bottom: none;
+}
+
+.next-steps {
+    text-align: center;
+    margin-top: 20px;
+}
+
+/* Utility classes */
+.hidden {
+    display: none;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .landing-content, .application-content {
+        flex-direction: column;
+    }
+    
+    .video-container, .application-progress {
+        min-width: 100%;
+    }
+}
+
+/* Card Styles */
+.card {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+/* Form Styles */
+.form-control:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Video Element Styles */
+#videoElement {
+    width: 100%;
+    max-width: 640px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Status Message Styles */
+.alert {
+    margin-top: 20px;
+    border-radius: 4px;
+}
+
+/* Footer Styles */
+.footer {
+    margin-top: auto;
+    background-color: #f8f9fa;
+    border-top: 1px solid #dee2e6;
+}

@@ -1,0 +1,421 @@
+{% extends "base.html" %}
+
+{% block title %}Loan Application{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="text-center">Loan Application</h3>
+                </div>
+                <div class="card-body">
+                    <!-- Progress Bar -->
+                    <div class="progress mb-4">
+                        <div class="progress-bar" role="progressbar" style="width: {{ application.progress|default(0) }}%">
+                            {{ application.progress|default(0) }}%
+                        </div>
+                    </div>
+                    
+                    <!-- Step Content -->
+                    <div id="stepContent">
+                        {% if application.current_step == 'personal_info' %}
+                            {% include 'steps/personal_info.html' %}
+                        {% elif application.current_step == 'financial_info' %}
+                            {% include 'steps/financial_info.html' %}
+                        {% elif application.current_step == 'document_upload' %}
+                            {% include 'steps/document_upload.html' %}
+                        {% elif application.current_step == 'review' %}
+                            {% include 'steps/review.html' %}
+                        {% else %}
+                            {% include 'steps/personal_info.html' %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Video Recording Modal -->
+<div class="modal fade" id="videoModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Record Your Response</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <video id="videoPreview" autoplay muted></video>
+                <video id="videoPlayback" style="display: none;" controls></video>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="startRecording">Start Recording</button>
+                <button type="button" class="btn btn-danger" id="stopRecording" style="display: none;">Stop Recording</button>
+                <button type="button" class="btn btn-primary" id="submitRecording" style="display: none;">Submit Recording</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Result Modal -->
+<div class="modal fade" id="resultModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Application Result</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center">
+                    <video id="resultVideo" class="w-100 mb-4" controls>
+                        <source src="" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video>
+                    <h4 id="resultTitle" class="mb-3">Congratulations!</h4>
+                    <p id="resultMessage" class="lead"></p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <a href="{{ url_for('main.index') }}" class="btn btn-primary">Back to Home</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let mediaRecorder;
+let recordedChunks = [];
+let currentStep = '{{ application.current_step|default("personal_info") }}';
+let currentField = '';
+
+// Add CSRF token to all fetch requests
+const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+// Function to show alerts
+function showAlert(type, message) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.querySelector('.card-body').insertBefore(alertDiv, document.querySelector('.progress'));
+    setTimeout(() => alertDiv.remove(), 5000);
+}
+
+// Function to handle application submission
+async function processApplication() {
+    const submitButton = document.getElementById('submitApplication');
+    if (!submitButton) {
+        console.error('Submit button not found');
+        return;
+    }
+
+    // Disable button and show loading state
+    submitButton.disabled = true;
+    submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Processing...';
+
+    try {
+        console.log('Sending application for processing...');
+        const response = await fetch('/api/process_application', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        console.log('Received response:', response);
+        const data = await response.json();
+        console.log('Response data:', data);
+        
+        if (data.success) {
+            // Show result modal
+            const resultModal = new bootstrap.Modal(document.getElementById('resultModal'));
+            const resultVideo = document.getElementById('resultVideo');
+            const resultMessage = document.getElementById('resultMessage');
+            
+            // Set video source based on status
+            if (data.status === 'approved') {
+                resultVideo.src = "{{ url_for('static', filename='videos/approved.mp4') }}";
+            } else {
+                resultVideo.src = "{{ url_for('static', filename='videos/rejected.mp4') }}";
+            }
+            
+            // Set message
+            resultMessage.textContent = data.message;
+            
+            // Show modal
+            resultModal.show();
+            
+            // Handle modal close
+            document.getElementById('resultModal').addEventListener('hidden.bs.modal', function () {
+                window.location.href = '/';
+            });
+        } else {
+            showAlert('danger', 'Error processing application: ' + data.error);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showAlert('danger', 'An error occurred while processing your application. Please try again.');
+    } finally {
+        // Reset button state
+        submitButton.disabled = false;
+        submitButton.innerHTML = 'Submit Application';
+    }
+}
+
+// Initialize when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize video recording
+    const videoPreview = document.getElementById('videoPreview');
+    const videoPlayback = document.getElementById('videoPlayback');
+    const startButton = document.getElementById('startRecording');
+    const stopButton = document.getElementById('stopRecording');
+    const submitButton = document.getElementById('submitRecording');
+    
+    // Function to display recorded video
+    function displayRecordedVideo(videoUrl, responseElement) {
+        const videoContainer = document.createElement('div');
+        videoContainer.className = 'mt-2';
+        
+        const video = document.createElement('video');
+        video.controls = true;
+        video.style.width = '100%';
+        video.style.maxWidth = '400px';
+        video.src = videoUrl;
+        
+        videoContainer.appendChild(video);
+        responseElement.appendChild(videoContainer);
+    }
+    
+    async function setupCamera() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            videoPreview.srcObject = stream;
+            
+            mediaRecorder = new MediaRecorder(stream);
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    recordedChunks.push(event.data);
+                }
+            };
+            
+            mediaRecorder.onstop = () => {
+                const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                videoPlayback.src = URL.createObjectURL(blob);
+                videoPlayback.style.display = 'block';
+                videoPreview.style.display = 'none';
+                submitButton.style.display = 'block';
+            };
+        } catch (err) {
+            console.error('Error accessing camera:', err);
+            alert('Failed to access camera. Please ensure you have granted camera permissions.');
+        }
+    }
+    
+    startButton.addEventListener('click', () => {
+        recordedChunks = [];
+        mediaRecorder.start();
+        startButton.style.display = 'none';
+        stopButton.style.display = 'block';
+        videoPlayback.style.display = 'none';
+        videoPreview.style.display = 'block';
+    });
+    
+    stopButton.addEventListener('click', () => {
+        mediaRecorder.stop();
+        stopButton.style.display = 'none';
+    });
+    
+    submitButton.addEventListener('click', async () => {
+        const blob = new Blob(recordedChunks, { type: 'video/webm' });
+        const formData = new FormData();
+        formData.append('video', blob, 'response.webm');
+        formData.append('step', currentStep);
+        formData.append('field', currentField);
+        
+        try {
+            const response = await fetch('/api/upload_video', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': csrfToken
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                // Update the UI with the response
+                const responseElement = document.getElementById(`${currentField}_response`);
+                if (responseElement) {
+                    // Clear previous content
+                    responseElement.innerHTML = '';
+                    
+                    // Display the recorded video
+                    displayRecordedVideo(URL.createObjectURL(blob), responseElement);
+                    
+                    // Add success message
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = 'mt-2 text-success';
+                    messageDiv.textContent = result.message || 'Response recorded successfully';
+                    responseElement.appendChild(messageDiv);
+                }
+                
+                // Close the modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('videoModal'));
+                modal.hide();
+                
+                // Reload the page to update the application data
+                window.location.reload();
+            } else {
+                showAlert('danger', 'Error: ' + result.error);
+            }
+        } catch (err) {
+            console.error('Error uploading video:', err);
+            showAlert('danger', 'Failed to upload video. Please try again.');
+        }
+    });
+    
+    // Handle record buttons
+    document.querySelectorAll('.record-button').forEach(button => {
+        button.addEventListener('click', async () => {
+            currentField = button.dataset.field;
+            await setupCamera();
+            const modal = new bootstrap.Modal(document.getElementById('videoModal'));
+            modal.show();
+        });
+    });
+    
+    // Handle continue button
+    const continueButton = document.querySelector('.btn-success:not(#submitApplication)');
+    if (continueButton) {
+        continueButton.addEventListener('click', async () => {
+            try {
+                // Determine next step based on current step
+                let nextStep;
+                switch(currentStep) {
+                    case 'personal_info':
+                        nextStep = 'financial_info';
+                        break;
+                    case 'financial_info':
+                        nextStep = 'document_upload';
+                        break;
+                    case 'document_upload':
+                        nextStep = 'review';
+                        break;
+                    default:
+                        nextStep = 'personal_info';
+                }
+                
+                const response = await fetch('/api/update_step', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify({
+                        step: nextStep
+                    })
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    window.location.reload();
+                } else {
+                    alert('Error: ' + result.error);
+                }
+            } catch (err) {
+                console.error('Error updating step:', err);
+                alert('Failed to update step. Please try again.');
+            }
+        });
+    }
+
+    // Add event listener to submit button
+    const submitApplicationButton = document.getElementById('submitApplication');
+    if (submitApplicationButton) {
+        console.log('Found submit button, adding click handler');
+        submitApplicationButton.addEventListener('click', function(e) {
+            console.log('Submit button clicked');
+            e.preventDefault();
+            e.stopPropagation();
+            processApplication();
+        });
+    } else {
+        console.error('Submit button not found in DOM');
+    }
+});
+
+// Function to handle document upload
+async function uploadDocument(formData) {
+    try {
+        const response = await fetch('/api/upload_document', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': csrfToken
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.error || 'Upload failed');
+        }
+        
+        showAlert('success', data.message);
+        return true;
+    } catch (error) {
+        console.error('Error uploading document:', error);
+        showAlert('danger', error.message || 'Failed to upload document');
+        return false;
+    }
+}
+
+// Add event listeners for document upload forms
+document.querySelectorAll('.document-upload-form').forEach(form => {
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(form);
+        const submitButton = form.querySelector('button[type="submit"]');
+        const statusDiv = form.querySelector('.upload-status');
+        
+        // Check if a file is selected
+        const fileInput = form.querySelector('input[type="file"]');
+        if (!fileInput.files.length) {
+            showAlert('danger', 'Please select a file to upload');
+            return;
+        }
+        
+        // Disable submit button and show loading state
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Uploading...';
+        
+        try {
+            const success = await uploadDocument(formData);
+            if (success) {
+                statusDiv.innerHTML = '<div class="alert alert-success">Document uploaded successfully!</div>';
+            }
+        } finally {
+            // Reset button state
+            submitButton.disabled = false;
+            submitButton.innerHTML = form.querySelector('input[name="type"]').value === 'pan_card' ? 'Upload PAN Card' : 
+                                   form.querySelector('input[name="type"]').value === 'id_proof' ? 'Upload ID Proof' : 
+                                   'Upload Income Proof';
+        }
+    });
+});
+</script>
+{% endblock %}

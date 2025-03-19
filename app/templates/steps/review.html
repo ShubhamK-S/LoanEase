@@ -1,0 +1,127 @@
+{% if application %}
+<div class="review-section">
+    <h4 class="mb-4">Review Your Application</h4>
+    
+    <!-- Pre-recorded Video -->
+    <div class="mb-4">
+        <video id="instructionVideo" class="w-100" controls>
+            <source src="{{ url_for('static', filename='videos/processing.mp4') }}" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+    </div>
+    
+    <!-- Personal Information -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Personal Information</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Full Name:</strong> {{ application.full_name }}</p>
+                    <p><strong>Date of Birth:</strong> {{ application.date_of_birth }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Email:</strong> {{ application.email }}</p>
+                    <p><strong>Phone:</strong> {{ application.phone }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Financial Information -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Financial Information</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Monthly Income:</strong> {{ application.monthly_income }}</p>
+                    <p><strong>Employment Type:</strong> {{ application.employment_type }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Loan Amount:</strong> {{ application.loan_amount }}</p>
+                    <p><strong>Loan Purpose:</strong> {{ application.loan_purpose }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Document Status -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Document Status</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <p>
+                        <strong>PAN Card:</strong>
+                        {% if application.pan_card %}
+                            <span class="badge bg-success">Uploaded</span>
+                        {% else %}
+                            <span class="badge bg-danger">Not Uploaded</span>
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="col-md-4">
+                    <p>
+                        <strong>ID Proof:</strong>
+                        {% if application.id_proof %}
+                            <span class="badge bg-success">Uploaded</span>
+                        {% else %}
+                            <span class="badge bg-danger">Not Uploaded</span>
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="col-md-4">
+                    <p>
+                        <strong>Income Proof:</strong>
+                        {% if application.income_proof %}
+                            <span class="badge bg-success">Uploaded</span>
+                        {% else %}
+                            <span class="badge bg-danger">Not Uploaded</span>
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Submit Button -->
+    <div class="text-center mt-4">
+        <button type="button" id="submitApplication" class="btn btn-success btn-lg" onclick="showApprovalResult()">
+            Submit Application
+        </button>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-danger">
+    No application data found. Please start a new application.
+</div>
+{% endif %}
+
+<script>
+// Simplified approval function
+function showApprovalResult() {
+    // Show result modal
+    const resultModal = new bootstrap.Modal(document.getElementById('resultModal'));
+    const resultVideo = document.getElementById('resultVideo');
+    const resultMessage = document.getElementById('resultMessage');
+    
+    // Set video source to approved video
+    resultVideo.src = "{{ url_for('static', filename='videos/approved.mp4') }}";
+    
+    // Set success message
+    resultMessage.textContent = "Congratulations! Your loan application has been approved! We will contact you shortly with further details.";
+    
+    // Show modal
+    resultModal.show();
+    
+    // Handle modal close - redirect to home
+    document.getElementById('resultModal').addEventListener('hidden.bs.modal', function () {
+        window.location.href = '/';
+    });
+}
+</script> 

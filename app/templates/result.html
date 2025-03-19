@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LoanEase - Application Result</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Loan Application Result</h1>
+            <p>Application ID: {{ application.application_id }}</p>
+        </header>
+        
+        <div class="result-content">
+            <div class="result-box {% if application.decision == 'approved' %}approved{% elif application.decision == 'rejected' %}rejected{% else %}pending{% endif %}">
+                <h2>Decision: {{ application.decision|capitalize }}</h2>
+                <p>{{ application.decision_reason }}</p>
+                
+                {% if application.decision == 'approved' %}
+                <div class="approved-details">
+                    <h3>Loan Details</h3>
+                    <ul>
+                        <li>Loan Amount: ₹{{ application.loan_amount }}</li>
+                        <li>Monthly Repayment: ₹{{ (application.loan_amount / 36)|round|int }}</li>
+                        <li>Tenure: 36 months</li>
+                        <li>Interest Rate: 10.5% p.a.</li>
+                    </ul>
+                    <p>Our representative will contact you shortly for next steps.</p>
+                </div>
+                {% elif application.decision == 'rejected' %}
+                <div class="rejected-details">
+                    <p>If you have any questions about this decision, please contact our customer support.</p>
+                </div>
+                {% elif application.decision == 'more_info' %}
+                <div class="more-info-details">
+                    <p>Please provide the required additional information to proceed with your application.</p>
+                    <a href="{{ url_for('main.application_process') }}" class="btn">Continue Application</a>
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="application-summary">
+                <h3>Application Summary</h3>
+                <table>
+                    <tr>
+                        <td>Name:</td>
+                        <td>{{ application.applicant_name }}</td>
+                    </tr>
+                    <tr>
+                        <td>Monthly Income:</td>
+                        <td>₹{{ application.monthly_income }}</td>
+                    </tr>
+                    <tr>
+                        <td>Requested Loan Amount:</td>
+                        <td>₹{{ application.loan_amount }}</td>
+                    </tr>
+                    <tr>
+                        <td>Loan Purpose:</td>
+                        <td>{{ application.loan_purpose }}</td>
+                    </tr>
+                    <tr>
+                        <td>Employment Type:</td>
+                        <td>{{ application.employment_type }}</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <div class="next-steps">
+                <a href="{{ url_for('main.index') }}" class="btn">Back to Home</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

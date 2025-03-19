@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}Facial Verification{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="text-center">Facial Verification</h3>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <video id="videoElement" width="640" height="480" autoplay playsinline></video>
+                        <canvas id="canvasElement" width="640" height="480" style="display: none;"></canvas>
+                    </div>
+                    
+                    <div class="text-center">
+                        <button id="registerBtn" class="btn btn-primary me-2">Register Face</button>
+                        <button id="verifyBtn" class="btn btn-success">Verify Face</button>
+                    </div>
+                    
+                    <div id="status" class="mt-3 text-center"></div>
+                    
+                    <div id="debug" class="mt-3 text-center" style="display: none;">
+                        <pre class="text-start bg-light p-3 rounded"></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/face_verification.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+    const faceVerification = new FaceVerification();
+    const statusDiv = document.getElementById('status');
+    const debugDiv = document.getElementById('debug');
+    const debugPre = debugDiv.querySelector('pre');
+    
+    function showStatus(message, type = 'info') {
+        statusDiv.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+    }
+    
+    function showDebug(message) {
+        debugPre.textContent = message;
+        debugDiv.style.display = 'block';
+    }
+    
+    try {
+        // Initialize face verification with the current user's ID
+        await faceVerification.initialize('videoElement', 'canvasElement', '{{ user_id }}');
+        showStatus('Webcam initialized successfully', 'success');
+        
+        // Register face button handler
+        document.getElementById('registerBtn').addEventListener('click', async () => {
+            showStatus('Registering face...', 'info');
+            try {
+                const result = await faceVerification.registerFace();
+                showStatus(result.message, result.success ? 'success' : 'danger');
+                showDebug(JSON.stringify(result, null, 2));
+            } catch (err) {
+                showStatus(`Error: ${err.message}`, 'danger');
+                showDebug(err.stack);
+            }
+        });
+        
+        // Verify face button handler
+        document.getElementById('verifyBtn').addEventListener('click', async () => {
+            showStatus('Verifying face...', 'info');
+            try {
+                const result = await faceVerification.verifyFace();
+                showStatus(result.message, result.success ? 'success' : 'danger');
+                showDebug(JSON.stringify(result, null, 2));
+                
+                if (result.success) {
+                    // Redirect to application page after successful verification
+                    setTimeout(() => {
+                        window.location.href = "{{ url_for('main.application_process') }}";
+                    }, 2000);
+                }
+            } catch (err) {
+                showStatus(`Error: ${err.message}`, 'danger');
+                showDebug(err.stack);
+            }
+        });
+        
+    } catch (err) {
+        showStatus(`Error: ${err.message}`, 'danger');
+        showDebug(err.stack);
+    }
+});
+</script>
+{% endblock %} 

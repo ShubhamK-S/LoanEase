@@ -1,0 +1,52 @@
+<div class="step-content">
+    <h4 class="mb-4">Financial Information</h4>
+    
+    <!-- Pre-recorded Video -->
+    <div class="mb-4">
+        <video id="instructionVideo" class="w-100" controls>
+            <source src="{{ url_for('static', filename='videos/ask_income.mp4') }}" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+    </div>
+    
+    <!-- Single Video Recording for All Fields -->
+    <div class="mb-4">
+        <h5>Record Your Financial Information</h5>
+        <p class="text-muted">Please state your monthly income, employment type, loan amount, and loan purpose in a single recording.</p>
+        <div class="d-flex align-items-center">
+            <button class="btn btn-primary record-button" data-field="financial_info">
+                <i class="fas fa-microphone"></i> Record All Information
+            </button>
+        </div>
+        <div id="financial_info_response" class="mt-2 text-muted"></div>
+    </div>
+    
+    <!-- Display Fields -->
+    <div class="mb-4">
+        <h5>Your Financial Information</h5>
+        <div class="card">
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">Monthly Income</label>
+                    <input type="number" class="form-control" id="monthly_income" value="{{ application.monthly_income or '' }}" readonly>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Employment Type</label>
+                    <input type="text" class="form-control" id="employment_type" value="{{ application.employment_type or '' }}" readonly>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Loan Amount</label>
+                    <input type="number" class="form-control" id="loan_amount" value="{{ application.loan_amount or '' }}" readonly>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Loan Purpose</label>
+                    <input type="text" class="form-control" id="loan_purpose" value="{{ application.loan_purpose or '' }}" readonly>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="text-end">
+        <button class="btn btn-success" onclick="updateStep()">Continue to Document Upload</button>
+    </div>
+</div> 

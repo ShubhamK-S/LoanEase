@@ -1,0 +1,106 @@
+<div class="step-content">
+    <h4 class="mb-4">Document Upload</h4>
+    
+    <!-- Pre-recorded Video -->
+    <div class="mb-4">
+        <video id="instructionVideo" class="w-100" controls>
+            <source src="{{ url_for('static', filename='videos/ask_documents.mp4') }}" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+    </div>
+    
+    <!-- Single Video Recording for Instructions -->
+    <div class="mb-4">
+        <h5>Document Upload Instructions</h5>
+        <p class="text-muted">Please watch the video above and follow the instructions to upload your documents.</p>
+    </div>
+    
+    <!-- Document Upload Fields -->
+    <div class="mb-4">
+        <h5>Upload Your Documents</h5>
+        <div class="card">
+            <div class="card-body">
+                <!-- PAN Card Upload -->
+                <form class="document-upload-form mb-4" enctype="multipart/form-data">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="type" value="pan_card">
+                    <div class="mb-3">
+                        <label class="form-label">PAN Card</label>
+                        <input type="file" class="form-control" name="document" accept=".pdf,.jpg,.jpeg,.png" required>
+                        <div class="upload-status mt-2"></div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-upload"></i> Upload PAN Card
+                    </button>
+                </form>
+                
+                <!-- ID Proof Upload -->
+                <form class="document-upload-form mb-4" enctype="multipart/form-data">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="type" value="id_proof">
+                    <div class="mb-3">
+                        <label class="form-label">ID Proof</label>
+                        <input type="file" class="form-control" name="document" accept=".pdf,.jpg,.jpeg,.png" required>
+                        <div class="upload-status mt-2"></div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-upload"></i> Upload ID Proof
+                    </button>
+                </form>
+                
+                <!-- Income Proof Upload -->
+                <form class="document-upload-form mb-4" enctype="multipart/form-data">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="type" value="income_proof">
+                    <div class="mb-3">
+                        <label class="form-label">Income Proof</label>
+                        <input type="file" class="form-control" name="document" accept=".pdf,.jpg,.jpeg,.png" required>
+                        <div class="upload-status mt-2"></div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-upload"></i> Upload Income Proof
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="text-end">
+        <button class="btn btn-success" onclick="updateStep()">Continue to Review</button>
+    </div>
+</div>
+
+<script>
+async function uploadDocument(documentType) {
+    const fileInput = document.getElementById(documentType);
+    const file = fileInput.files[0];
+    
+    if (!file) {
+        alert('Please select a file first');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('document', file);
+    formData.append('type', documentType);
+    
+    try {
+        const response = await fetch('/api/upload_document', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            const responseElement = document.getElementById(`${documentType}_response`);
+            responseElement.innerHTML = '<div class="text-success">Document uploaded successfully</div>';
+        } else {
+            alert('Error: ' + result.error);
+        }
+    } catch (err) {
+        console.error('Error uploading document:', err);
+        alert('Failed to upload document. Please try again.');
+    }
+}
+</script> 
